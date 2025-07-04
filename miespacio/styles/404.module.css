@@ -1,0 +1,42 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+  
+  .error404 {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ff6347;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .number {
+    font-size: 6rem;
+  }
+  
+  .message {
+    font-size: 1.5rem;
+  }
+  
+  .emoji {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+  
+  .homeLink a {
+    background-color: var(--light_green);
+    color: #fff;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .homeLink a:hover {
+    background-color: var(--dark_green);
+  }
+  

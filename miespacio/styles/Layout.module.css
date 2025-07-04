@@ -1,0 +1,13 @@
+.row {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    width: 100%;
+    gap: 17px;
+}
+
+.row main {
+    width: 100%;
+    min-width: 0px;
+}

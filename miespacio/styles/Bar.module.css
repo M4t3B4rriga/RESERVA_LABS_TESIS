@@ -1,0 +1,34 @@
+.loading_bar {
+    display: flex;
+    width: 100%;
+    height: 5px;
+    background-color: var(--light_green);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    animation: loadingAnimation 1s infinite;
+}
+
+@keyframes loadingAnimation {
+    0% {
+        background-color: var(--light_green);
+    }
+
+    20% {
+        background-color: var(--green2);
+    }
+
+    40% {
+        background-color: var(--green);
+    }
+
+    60% {
+        background-color: var(--dark_green);
+    }
+
+    100% {
+        background-color: var(--light_green);
+    }
+}

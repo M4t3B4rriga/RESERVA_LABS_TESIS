@@ -1,0 +1,126 @@
+.link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.card {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 250px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    padding: 4px 6px;
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    border: 1px solid var(--line_gray);
+    background-color: var(--white_soft);
+}
+
+.card:active {
+    transform: scale(0.95);
+}
+
+.image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 150px;
+    width: 100%;
+}
+
+.img {
+    width: 100%;
+    height: 100%;
+    border-radius: 9px;
+    object-fit: cover;
+    object-position: center;
+}
+
+.info {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin: 3px 0px;
+    font-size: 15px;
+}
+
+.tipo_espacio {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    color: var(--background_lighter);
+    background-color: var(--font_color_lighter);
+    font-size: 15px;
+    max-width: 70%;
+}
+
+.tipo_espacio span {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.capacity{
+    font-weight: 600;
+    color: var(--font_color_lighter);
+}
+
+.title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 8px 0px 5px;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    max-height: 1.2em;
+    width: 100%;
+    color: var(--font_color_light)
+}
+
+.card_icon{
+    font-size: 14px;
+    margin-right: 5px;
+}
+
+.disponibility {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    color: var(--white);
+    font-size: 14px;
+}
+
+.available {
+    background-color: var(--light_green);
+}
+
+.unavailable {
+    background-color: var(--red);
+}
+
+.red_color {
+    color: var(--red) !important;
+}
