@@ -4,11 +4,13 @@ import { serialize } from "cookie";
 import pool from '@/libs/db';
 import { OkPacket, RowDataPacket } from 'mysql2';
 import cookie from "cookie";
+import bcrypt from 'bcrypt';
 
 interface UserRow extends RowDataPacket {
   id: number;
   username: string;
   password: string;
+  ROL: string;
 }
 
 export default async function loginHandler(req: NextApiRequest, res: NextApiResponse) {
@@ -38,6 +40,7 @@ export default async function loginHandler(req: NextApiRequest, res: NextApiResp
           Nombre: rows[0].PEI_NOMBRE,
           ApellPaterno: rows[0].PEI_APELLIDO_PATERNO,
           CodRol: rows[0].PK_TMSROL,
+          Rol: rows[0].ROL,
         },
         "secret"
       );
@@ -54,6 +57,9 @@ export default async function loginHandler(req: NextApiRequest, res: NextApiResp
       const cookies = cookie.serialize("miEspacioSession", token, {
         maxAge: 1209600000,
         path: "/",
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
       });
       res.setHeader("Set-Cookie", cookies);
       console.log(`res.getHeader("Set-Cookie")`, res.getHeader("Set-Cookie"));

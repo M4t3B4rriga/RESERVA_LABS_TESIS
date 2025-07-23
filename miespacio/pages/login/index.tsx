@@ -11,6 +11,9 @@ import { jwtVerify } from 'jose';
 import { GetServerSidePropsContext } from 'next';
 import { Auth } from '@/libs/auth';
 import Head from 'next/head';
+import { ReactNotifications, Store } from 'react-notifications-component';
+import 'react-notifications-component/dist/theme.css';
+import { is } from 'date-fns/locale';
 
 interface Props {
   usuarioLogueado: Auth | null;
@@ -57,10 +60,25 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
 export default function Login({usuarioLogueado}: Props): JSX.Element {
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [credentials, setCredentials] = useState({
     username: "",
     password: "",
   });
+
+  const [registerData, setRegisterData]=useState({
+    username: "",
+    password: "",
+    firstName:"",
+    lastName:"",
+    secondLastName:"",
+    email:"",
+    role: "Estudiante",
+    carnetId:"",
+    cedula:"",
+    telefono:"",
+  });
+
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
@@ -72,13 +90,100 @@ export default function Login({usuarioLogueado}: Props): JSX.Element {
       console.log(res);
 
       if (res.status === 200) {
+        Store.addNotification({
+          title: 'Inicio de sesión exitoso',
+          message: 'Bienvenido a miESPE',
+          type: 'success',
+          insert: 'top',
+          container: 'top-left',
+          animationIn: ['animate__animated', 'animate__fadeIn'],
+          animationOut: ['animate__animated', 'animate__fadeOut'],
+          dismiss: { duration: 3000, onScreen: true },
+        });
         router.push("/");
       }
     } catch (error) {
       setErrorMessage("Credenciales inválidas. Por favor, verifique su usuario y contraseña."); // Establecer el mensaje de error en caso de fallo de inicio de sesión
+      Store.addNotification({
+        title: 'Error',
+        message: 'Credenciales inválidas. Por favor, verifique su usuario y contraseña.',
+        type: 'danger',
+        insert: 'top',
+        container: 'top-left',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: { duration: 3000, onScreen: true },
+      });
     }
     setIsLoading(false);
   };
+
+  const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>)=> {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMessage("");
+
+    // Validación básica
+    const requiredFields = ['username', 'password', 'firstName', 'lastName', 'email', 'role', 'carnetId'];
+    const missingFields = requiredFields.filter(field => !registerData[field as keyof typeof registerData]);
+    if (missingFields.length > 0) {
+      setErrorMessage(`Por favor completa los campos obligatorios: ${missingFields.join(', ')}`);
+      Store.addNotification({
+        title: 'Error',
+        message: `Por favor completa los campos obligatorios: ${missingFields.join(', ')}`,
+        type: 'danger',
+        insert: 'top',
+        container: 'top-left',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: { duration: 3000, onScreen: true },
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/register`, registerData);
+      Store.addNotification({
+        title: 'Registro exitoso',
+        message: res.data.message || 'Solicitud de registro enviada con éxito',
+        type: 'success',
+        insert: 'top',
+        container: 'top-left',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: { duration: 3000, onScreen: true },
+      });
+      setIsRegistering(false);
+      setRegisterData({
+        username: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+        secondLastName: "",
+        email: "",
+        role: "Estudiante",
+        carnetId: "",
+        cedula: "",
+        telefono: "",
+      });
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || 'Error al enviar la solicitud de registro. Inténtelo de nuevo.';
+      setErrorMessage(errorMsg);
+      Store.addNotification({
+        title: 'Error',
+        message: errorMsg,
+        type: 'danger',
+        insert: 'top',
+        container: 'top-left',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: { duration: 3000, onScreen: true },
+      });
+    }
+    setIsLoading(false);
+  };  
+
   useEffect(() => {
 
     const timeline = new TimelineLite({ repeat: -1, yoyo: true });
@@ -126,8 +231,185 @@ export default function Login({usuarioLogueado}: Props): JSX.Element {
             <img src="/images/logos/mi_espacio.png" alt="Logo" className={styles.logo} />
           </div>
           <div className={styles.formContainer}>
-            <h2 className={styles.loginTitle}>Iniciar Sesión</h2>
+            <h2 className={styles.loginTitle}>{isRegistering ? 'Registro' : 'Iniciar Sesión'}</h2>
             <img src={"/images/logos/logo_espe.png"} alt="User Icon" className={styles.userIcon} />
+            {isRegistering ? (
+              <form className='styles.form' onSubmit={handleRegisterSubmit}>
+                <label htmlFor="reg-username" className={styles.label}>Usuario</label>
+                <input 
+                  type="text"
+                  id="reg-username"
+                  name="username"
+                  placeholder="Ingresa tu usuario de miESPE"
+                  required
+                  value={registerData.username}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      username: e.target.value,
+                    })
+                  }
+                  className={styles.input} />
+                <label htmlFor="reg-password" className={styles.label}>Contraseña</label>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="reg-password"
+                    name="password"
+                    placeholder="Ingresa tu contraseña de miESPE"
+                    required
+                    value={registerData.password}
+                    onChange={(e) =>
+                      setRegisterData({
+                        ...registerData,
+                        password: e.target.value,
+                      })
+                    }
+                    className={styles.input} />
+                  <button
+                    type="button"
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '36%',
+                      transform: 'translateY(-50%)',
+                      border: 'none',
+                      background: 'none',
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                    onClick={toggleShowPassword}
+                  >
+                    <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} className={styles.show_button} />
+                  </button>
+                </div>
+                <label htmlFor="firstName" className={styles.label}>Nombre</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  placeholder="Ingresa tu nombre"
+                  required
+                  value={registerData.firstName}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      firstName: e.target.value,
+                    })
+                  }
+                  className={styles.input} />
+                <label htmlFor="lastName" className={styles.label}>Apellido Paterno</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  placeholder="Ingresa tu apellido paterno"
+                  required
+                  value={registerData.lastName}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      lastName: e.target.value,
+                    })
+                  }
+                  className={styles.input} />
+                <label htmlFor="secondLastName" className={styles.label}>Apellido Materno</label>
+                <input
+                  type="text"
+                  id="secondLastName"
+                  name="secondLastName"
+                  placeholder="Ingresa tu apellido materno"
+                  value={registerData.secondLastName}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      secondLastName: e.target.value,
+                    })
+                  }
+                  className={styles.input} />
+                  <label htmlFor="carnetId" className={styles.label}>Carnet ID</label>
+                  <input
+                    type="text"
+                    id="carnetId"
+                    name="carnetId"
+                    placeholder="Ingresa tu carnet ID"
+                    value={registerData.carnetId}
+                    onChange={(e) =>
+                      setRegisterData({
+                        ...registerData,
+                        carnetId: e.target.value,
+                      })
+                    }
+                    className={styles.input} />
+                    <label htmlFor="email" className='styles.label'>Correo Institucional</label>
+                    <input 
+                      type="email"
+                      id="email"
+                      name="email"
+                      placeholder="Ingresa tu correo institucional"
+                      required
+                      value={registerData.email}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          email: e.target.value,
+                        })
+                      }
+                      className={styles.input} />
+                <label htmlFor="cedula" className={styles.label}>Cédula</label>
+                <input
+                  type="text"
+                  id="cedula"
+                  name="cedula"
+                  placeholder="Ingresa tu número de cédula"
+                  value={registerData.cedula}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      cedula: e.target.value,
+                    })
+                  }
+                  className={styles.input} />
+                <label htmlFor="telefono" className={styles.label}>Teléfono</label>
+                <input
+                  type="text"
+                  id="telefono"
+                  name="telefono"
+                  placeholder="Ingresa tu número de teléfono"
+                  value={registerData.telefono}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      telefono: e.target.value,
+                    })
+                  }
+                  className={styles.input} />
+                <label htmlFor="role" className={styles.label}>Rol</label>
+                <select
+                  id="role"
+                  name="role"
+                  value={registerData.role}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      role: e.target.value,
+                    })
+                  }
+                  className={styles.input}
+                >
+                  <option value="Estudiante">Estudiante</option>
+                  <option value="Docente">Docente</option>
+                  <option value="Administrativo">Administrativo</option>
+                </select>
+                {errorMessage && <label className={styles.labelError}>{errorMessage}</label>}
+                <button type="submit" className={styles.button} disabled={isLoading}>
+                  {isLoading ? <FontAwesomeIcon icon={faSpinner} spin /> : 'Registrar'}
+                </button>
+                <button type="button" className={styles.button} onClick={() => setIsRegistering(false)}>
+                  Volver al Login
+                </button>
+                </form>
+            ) : (
             <form className={styles.form} onSubmit={handleSubmit}>
               <label htmlFor="username" className={styles.label}>Usuario</label>
               <input
@@ -180,7 +462,11 @@ export default function Login({usuarioLogueado}: Props): JSX.Element {
               <button type="submit" className={styles.button} disabled={isLoading}>
                 {isLoading ? <FontAwesomeIcon icon={faSpinner} spin /> : 'Ingresar'}
               </button>
+              <button type="button" className={styles.button} onClick={() => setIsRegistering(true)}>
+                Registrarse
+              </button>
             </form>
+            )}
           </div>
         </div>
       </div>
