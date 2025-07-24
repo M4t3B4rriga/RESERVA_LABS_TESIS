@@ -24,11 +24,17 @@ export default async function loginHandler(req: NextApiRequest, res: NextApiResp
 
   try {
     const [rows] = await pool.query<UserRow[]>(
-      "SELECT u.*, pi.*, r.* FROM T_MSUSUARIO u JOIN T_MCPERSONA_INTERNA pi ON u.PK_TMCPERSONA_INTERNA = pi.PK_TMCPERSONA_INTERNA JOIN T_MSROL_USUARIO ur ON u.XEUSU_CODIGO = ur.XEUSU_CODIGO JOIN T_MSROL r ON ur.PK_TMSROL = r.PK_TMSROL WHERE u.USU_NOMBRE = ? AND u.XEUSU_PASWD = ?",
-      [username, password]
+      "SELECT u.*, pi.*, r.* FROM T_MSUSUARIO u JOIN T_MCPERSONA_INTERNA pi ON u.PK_TMCPERSONA_INTERNA = pi.PK_TMCPERSONA_INTERNA JOIN T_MSROL_USUARIO ur ON u.XEUSU_CODIGO = ur.XEUSU_CODIGO JOIN T_MSROL r ON ur.PK_TMSROL = r.PK_TMSROL WHERE u.USU_NOMBRE = ?",
+      [username]
     );
 
     if (rows.length === 1) {
+      // Comparar la contraseña ingresada con la contraseña hasheada usando bcrypt
+      const isPasswordValid = await bcrypt.compare(password, rows[0].XEUSU_PASWD);
+      
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
       console.log(rows);
       // expire in 30 days
       const token = sign(
