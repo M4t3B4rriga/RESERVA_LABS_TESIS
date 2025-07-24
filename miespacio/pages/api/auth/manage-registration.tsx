@@ -58,6 +58,50 @@ export default async function manageRegistrationHandler(req: NextApiRequest, res
     const solicitud = solicitudes[0];
 
     if (accion === 'Aceptado') {
+      // Iniciar transacción
+      await pool.query('START TRANSACTION');
+      try{
+        // Insertar en T_MSUSUARIO si es aceptado
+        const [userResult] = await pool.query<OkPacket>(
+          'INSERT INTO T_MSUSUARIO (PK_TMCPERSONA_INTERNA, USU_NOMBRE, XEUSU_PASWD, ROL) VALUES (?, ?, ?, ?)',
+          [solicitud.PK_TMCPERSONA_INTERNA, solicitud.USU_NOMBRE, solicitud.XEUSU_PASWD, solicitud.ROL]
+        );
+
+        // Asignar rol según el tipo solicitado
+        let rolId: number;
+        switch (solicitud.ROL) {
+          case 'Estudiante':
+            rolId = 5; // PK_TMSROL = 5
+            break;
+          case 'Docente':
+            rolId = 6; // PK_TMSROL = 6
+            break;
+          case 'Administrador':
+            rolId = 2; // PK_TMSROL = 2
+            break;
+          default:
+            // Si no coincide con ninguno, asignar Usuario por defecto
+            rolId = 1; // PK_TMSROL = 1
+            console.warn(`Rol no reconocido: ${solicitud.ROL}, asignando rol Usuario por defecto`);
+        }
+
+        // Insertar en T_MSROL_USUARIO
+        await pool.query(
+          'INSERT INTO T_MSROL_USUARIO (PK_TMSROL, XEUSU_CODIGO, RUS_FECHA_ASIGNACION, ESTADO) VALUES (?, ?, NOW(), 1)',
+          [rolId, userResult.insertId]
+        );
+
+        // Confirmar transacción
+        await pool.query('COMMIT');
+        
+        console.log(`Usuario ${solicitud.USU_NOMBRE} creado con rol ${solicitud.ROL} (PK_TMSROL: ${rolId})`);
+      } catch (error) {
+        // Rollback en caso de error
+        await pool.query('ROLLBACK');
+        throw error;
+      }
+    }
+      /*
       // Insertar en T_MSUSUARIO si es aceptado
       const [userResult] = await pool.query<OkPacket>(
         'INSERT INTO T_MSUSUARIO (PK_TMCPERSONA_INTERNA, USU_NOMBRE, XEUSU_PASWD, ROL) VALUES (?, ?, ?, ?)',
@@ -69,8 +113,7 @@ export default async function manageRegistrationHandler(req: NextApiRequest, res
       await pool.query(
         'INSERT INTO T_MSROL_USUARIO (PK_TMSROL, XEUSU_CODIGO, RUS_FECHA_ASIGNACION, ESTADO) VALUES (?, ?, NOW(), 1)',
         [rolId, userResult.insertId]
-      );
-    }
+      );*/
 
     // Actualizar el estado de la solicitud
     await pool.query(
