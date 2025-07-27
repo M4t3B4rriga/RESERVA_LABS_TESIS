@@ -21,44 +21,44 @@ interface Props {
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   try {
-      const { miEspacioSession } = context.req.cookies;
+    const { miEspacioSession } = context.req.cookies;
 
-      if (miEspacioSession === undefined) {
-          console.log('No hay cookie');
-          return { props: { reservas: [], totalCount: 0, usuarioLogueado: null } };
-      }
+    if (miEspacioSession === undefined) {
+      console.log('No hay cookie');
+      return { props: { reservas: [], totalCount: 0, usuarioLogueado: null } };
+    }
 
-      const { payload } = await jwtVerify(
-          miEspacioSession,
-          new TextEncoder().encode('secret')
-      );
+    const { payload } = await jwtVerify(
+      miEspacioSession,
+      new TextEncoder().encode('secret')
+    );
 
-      console.log(payload);
+    console.log(payload);
 
-      const CodPersonaInterna = payload?.PI;
-      const NombreUsuario = payload?.Nombre + ' ' + payload?.ApellPaterno;
-      const CodRol = payload?.CodRol;
-      const CodUsuario = payload?.CodUsuario;
+    const CodPersonaInterna = payload?.PI;
+    const NombreUsuario = payload?.Nombre + ' ' + payload?.ApellPaterno;
+    const CodRol = payload?.CodRol;
+    const CodUsuario = payload?.CodUsuario;
 
-      const usuarioLogueado = {
-          CodPersonaInterna: CodPersonaInterna as number,
-          usuarioNombre: NombreUsuario as string,
-          CodRol: CodRol as number,
-          usuarioLogueado: CodUsuario as number,
-      } as Auth;
+    const usuarioLogueado = {
+      CodPersonaInterna: CodPersonaInterna as number,
+      usuarioNombre: NombreUsuario as string,
+      CodRol: CodRol as number,
+      usuarioLogueado: CodUsuario as number,
+    } as Auth;
 
-      if (CodPersonaInterna === undefined || NombreUsuario === undefined || CodRol === undefined || CodUsuario === undefined) {
-          console.log('No hay payload');
-          return { props: { usuarioLogueado: null } };
-      }
-      return { props: { usuarioLogueado: usuarioLogueado } };
-  } catch (error) {
-      console.error(error);
+    if (CodPersonaInterna === undefined || NombreUsuario === undefined || CodRol === undefined || CodUsuario === undefined) {
+      console.log('No hay payload');
       return { props: { usuarioLogueado: null } };
+    }
+    return { props: { usuarioLogueado: usuarioLogueado } };
+  } catch (error) {
+    console.error(error);
+    return { props: { usuarioLogueado: null } };
   }
 }
 
-export default function Login({usuarioLogueado}: Props): JSX.Element {
+export default function Login({ usuarioLogueado }: Props): JSX.Element {
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [credentials, setCredentials] = useState({
@@ -66,17 +66,17 @@ export default function Login({usuarioLogueado}: Props): JSX.Element {
     password: "",
   });
 
-  const [registerData, setRegisterData]=useState({
+  const [registerData, setRegisterData] = useState({
     username: "",
     password: "",
-    firstName:"",
-    lastName:"",
-    secondLastName:"",
-    email:"",
+    firstName: "",
+    lastName: "",
+    secondLastName: "",
+    email: "",
     role: "Estudiante",
-    carnetId:"",
-    cedula:"",
-    telefono:"",
+    carnetId: "",
+    cedula: "",
+    telefono: "",
   });
 
   const [errorMessage, setErrorMessage] = useState("");
@@ -118,7 +118,7 @@ export default function Login({usuarioLogueado}: Props): JSX.Element {
     setIsLoading(false);
   };
 
-  const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>)=> {
+  const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage("");
@@ -182,7 +182,7 @@ export default function Login({usuarioLogueado}: Props): JSX.Element {
       });
     }
     setIsLoading(false);
-  };  
+  };
 
   useEffect(() => {
 
@@ -236,7 +236,7 @@ export default function Login({usuarioLogueado}: Props): JSX.Element {
             {isRegistering ? (
               <form className='styles.form' onSubmit={handleRegisterSubmit}>
                 <label htmlFor="reg-username" className={styles.label}>Usuario</label>
-                <input 
+                <input
                   type="text"
                   id="reg-username"
                   name="username"
@@ -327,35 +327,35 @@ export default function Login({usuarioLogueado}: Props): JSX.Element {
                     })
                   }
                   className={styles.input} />
-                  <label htmlFor="carnetId" className={styles.label}>Carnet ID</label>
-                  <input
-                    type="text"
-                    id="carnetId"
-                    name="carnetId"
-                    placeholder="Ingresa tu carnet ID"
-                    value={registerData.carnetId}
-                    onChange={(e) =>
-                      setRegisterData({
-                        ...registerData,
-                        carnetId: e.target.value,
-                      })
-                    }
-                    className={styles.input} />
-                    <label htmlFor="email" className='styles.label'>Correo Institucional</label>
-                    <input 
-                      type="email"
-                      id="email"
-                      name="email"
-                      placeholder="Ingresa tu correo institucional"
-                      required
-                      value={registerData.email}
-                      onChange={(e) =>
-                        setRegisterData({
-                          ...registerData,
-                          email: e.target.value,
-                        })
-                      }
-                      className={styles.input} />
+                <label htmlFor="carnetId" className={styles.label}>Carnet ID</label>
+                <input
+                  type="text"
+                  id="carnetId"
+                  name="carnetId"
+                  placeholder="Ingresa tu carnet ID"
+                  value={registerData.carnetId}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      carnetId: e.target.value,
+                    })
+                  }
+                  className={styles.input} />
+                <label htmlFor="email" className='styles.label'>Correo Institucional</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="Ingresa tu correo institucional"
+                  required
+                  value={registerData.email}
+                  onChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      email: e.target.value,
+                    })
+                  }
+                  className={styles.input} />
                 <label htmlFor="cedula" className={styles.label}>Cédula</label>
                 <input
                   type="text"
@@ -408,64 +408,70 @@ export default function Login({usuarioLogueado}: Props): JSX.Element {
                 <button type="button" className={styles.button} onClick={() => setIsRegistering(false)}>
                   Volver al Login
                 </button>
-                </form>
+              </form>
             ) : (
-            <form className={styles.form} onSubmit={handleSubmit}>
-              <label htmlFor="username" className={styles.label}>Usuario</label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                placeholder="Ingresa tu usuario de miESPE"
-                required
-                onChange={(e) =>
-                  setCredentials({
-                    ...credentials,
-                    username: e.target.value,
-                  })
-                }
-                className={styles.input} />
-              <label htmlFor="password" className={styles.label}>Contraseña</label>
-              <div style={{ position: 'relative', width: '100%' }}>
+              <form className={styles.form} onSubmit={handleSubmit}>
+                <label htmlFor="username" className={styles.label}>Usuario</label>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  className={styles.input}
-                  id="password"
-                  name="password"
-                  placeholder="Ingresa tu contraseña de miESPE"
+                  type="text"
+                  id="username"
+                  name="username"
+                  placeholder="Ingresa tu usuario de miESPE"
                   required
                   onChange={(e) =>
                     setCredentials({
                       ...credentials,
-                      password: e.target.value,
+                      username: e.target.value,
                     })
                   }
-                />
-                <button
-                  type="button"
-                  style={{
-                    position: 'absolute',
-                    right: '10px',
-                    top: '36%',
-                    transform: 'translateY(-50%)',
-                    border: 'none',
-                    background: 'none',
-                    cursor: 'pointer',
-                    outline: 'none',
-                  }}
-                  onClick={toggleShowPassword}
-                >
-                  <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} className={styles.show_button} />
+                  className={styles.input} />
+                <label htmlFor="password" className={styles.label}>Contraseña</label>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className={styles.input}
+                    id="password"
+                    name="password"
+                    placeholder="Ingresa tu contraseña de miESPE"
+                    required
+                    onChange={(e) =>
+                      setCredentials({
+                        ...credentials,
+                        password: e.target.value,
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '36%',
+                      transform: 'translateY(-50%)',
+                      border: 'none',
+                      background: 'none',
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                    onClick={toggleShowPassword}
+                  >
+                    <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} className={styles.show_button} />
+                  </button>
+                </div>
+                {errorMessage && <label className={styles.labelError}>{errorMessage}</label>}
+                <button type="submit" className={styles.button} disabled={isLoading}>
+                  {isLoading ? <FontAwesomeIcon icon={faSpinner} spin /> : 'Ingresar'}
                 </button>
-              </div>
-              {errorMessage && <label className={styles.labelError}>{errorMessage}</label>}
-              <button type="submit" className={styles.button} disabled={isLoading}>
-                {isLoading ? <FontAwesomeIcon icon={faSpinner} spin /> : 'Ingresar'}
-              </button>
-              <button type="button" className={styles.button} onClick={() => setIsRegistering(true)}>
-                Registrarse
-              </button>
-            </form>
+                <button type="button" className={styles.button} onClick={() => setIsRegistering(true)}>
+                  Registrarse
+                </button>
+                <button type="button" className={styles.button} onClick={() => router.push('/forgot-password')} style={{
+                    backgroundColor: '#6c757d',
+                    marginTop: '10px'
+                  }}>
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </form>
             )}
           </div>
         </div>

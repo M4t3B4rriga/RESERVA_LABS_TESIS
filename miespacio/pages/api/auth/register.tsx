@@ -49,6 +49,8 @@ export default async function registerHandler(req: NextApiRequest, res: NextApiR
     // Iniciar transacción
     await pool.query('START TRANSACTION');
 
+    
+
     // Insertar en T_MCPERSONA_INTERNA
     const [personaResult] = await pool.query<OkPacket>(
       'INSERT INTO T_MCPERSONA_INTERNA (PEI_NOMBRE, PEI_APELLIDO_PATERNO, PEI_APELLIDO_MATERNO, PEI_CARNET_ID, PEI_EMAIL_INSTITUCIONAL, PEI_EMAIL_PERSONAL, PEI_CEDULA, PEI_TELEFONO) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
