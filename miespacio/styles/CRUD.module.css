@@ -804,6 +804,15 @@
     border: 2px solid var(--green2);
 }
 
+.estado_pendiente {
+    padding: 3px 10px;
+    border-radius: 25px;
+    background-color: #fff3cd;
+    color: #856404;
+    font-weight: 600;
+    border: 2px solid #ffc107;
+}
+
 .estado_inactivo {
     padding: 3px 5px;
     border-radius: 25px;

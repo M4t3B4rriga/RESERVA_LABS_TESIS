@@ -21,6 +21,10 @@
     padding: 0 20px;
 }
 
+.loginContainer.registering {
+    max-width: 1200px;
+}
+
 .logoContainer {
     flex: 1;
     display: flex;
@@ -36,6 +40,11 @@
     box-shadow: 5px 5px 0px 1px rgb(42, 108, 40, 0.38);
     border-radius: 30px;
     text-align: center;
+}
+
+.formContainer.registering {
+    flex: 1.5;
+    min-width: 600px;
 }
 
 .logo {
@@ -66,6 +75,14 @@
     font-weight: bold;
     margin-bottom: 5px;
     color: var(--red);
+    align-self: flex-start;
+}
+
+.labelSuccess {
+    font-size: 17px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: var(--green2);
     align-self: flex-start;
 }
 
@@ -110,6 +127,19 @@
     transform: scale(0.95);
 }
 
+.formRow {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.formColumn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 .show_button {
     color: var(--green2);
 }
@@ -144,6 +174,10 @@
         padding: 20px;
     }
 
+    .loginContainer.registering {
+        max-width: none;
+    }
+
     .logoContainer {
         margin: 20px 0;
         margin-right: 0;
@@ -152,6 +186,16 @@
     .formContainer {
         margin-top: 20px;
         min-width: 265px;
+    }
+
+    .formContainer.registering {
+        min-width: 300px;
+        flex: 1;
+    }
+
+    .formRow {
+        flex-direction: column;
+        gap: 0;
     }
 
     .logo {
@@ -190,6 +234,10 @@
         padding: 0;
     }
 
+    .loginContainer.registering {
+        max-width: none;
+    }
+
     .loginTitle {
         font-size: 32px;
         margin: -5px 0 15px 0;
@@ -205,6 +253,16 @@
         width: calc(100% - 60px);
         padding: 30px;
         min-width: auto;
+    }
+
+    .formContainer.registering {
+        min-width: auto;
+        width: calc(100% - 40px);
+    }
+
+    .formRow {
+        flex-direction: column;
+        gap: 0;
     }
 
     .logo {
@@ -229,4 +287,10 @@
     .button {
         font-size: 16px;
     }
+}
+
+/* Formulario de recuperar contraseña más ancho */
+.forgotPasswordContainer {
+    flex: 1.4;
+    min-width: 580px;
 }

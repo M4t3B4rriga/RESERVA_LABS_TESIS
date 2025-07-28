@@ -6,11 +6,14 @@ import axios from 'axios';
 import { API_BASE_URL } from '@/src/components/BaseURL';
 import Layout from '@/src/components/Layout';
 import Head from 'next/head';
-import styles from '@/styles/Home.module.css';
+import styles from '@/styles/ManagePasswordChanges.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faTimesCircle, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faTimesCircle, faEye, faEyeSlash, faClipboardList, faFilter, faUser, faLock, faEdit, faTrashAlt, faUndo, faExclamationTriangle, faSort, faSortUp, faSortDown, faPrint, faFileCsv, faFilePdf, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { Store } from 'react-notifications-component';
 import 'react-notifications-component/dist/theme.css';
+import { ReactNotifications } from 'react-notifications-component';
+import Pagination from '@/src/components/Pagination';
+import SearchBar from '@/src/components/SearchBar';
 
 interface SolicitudPassword {
   PK_CAMBIO_PASSWORD_SOLICITUD: number;
@@ -80,31 +83,134 @@ export default function ManagePasswordChanges({ usuarioLogueado }: Props) {
   const [comentarios, setComentarios] = useState<{ [key: number]: string }>({});
   const [nuevasPasswords, setNuevasPasswords] = useState<{ [key: number]: string }>({});
   const [showPasswords, setShowPasswords] = useState<{ [key: number]: boolean }>({});
+  const [filtroEstado, setFiltroEstado] = useState<string>('Todos');
+  const [showScrollHint, setShowScrollHint] = useState(false);
+  
+  // Estados para funcionalidad CRUD
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalSolicitudes, setTotalSolicitudes] = useState(0);
+  const [error, setError] = useState(false);
+  const [messageError, setMessageError] = useState('');
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  
+  // Contadores totales para los filtros
+  const [contadoresTotales, setContadoresTotales] = useState({
+    todos: 0,
+    pendiente: 0,
+    aceptado: 0,
+    rechazado: 0
+  });
 
-  const fetchSolicitudes = async () => {
+  // Detectar si es dispositivo móvil para mostrar hint de scroll
+  useEffect(() => {
+    const checkMobile = () => {
+      setShowScrollHint(window.innerWidth <= 992);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Funciones para CRUD
+  const handleSearchTermChange = (newSearchTerm: string) => {
+    setSearch(newSearchTerm);
+    setPage(1);
+    
+    // Limpiar timeout anterior
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    // Establecer nuevo timeout para búsqueda
+    const newTimeout = setTimeout(() => {
+      console.log('Ejecutando búsqueda con término:', newSearchTerm); // Para debug
+      // El useEffect se encargará de hacer la búsqueda
+    }, 500); // Esperar 500ms después de que el usuario deje de escribir
+    
+    setSearchTimeout(newTimeout);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleReload = () => {
+    setError(false);
+    setMessageError('');
+    fetchSolicitudes(true); // Mostrar notificación al recargar manualmente
+  };
+
+  const fetchContadoresTotales = async () => {
+    try {
+      // Obtener contadores sin filtros para mostrar números totales
+      const response = await axios.get(`${API_BASE_URL}/api/auth/password-change-solicitudes`, {
+        params: { page: 1, limit: 1000 } // Obtener muchos registros para contar correctamente
+      });
+      
+      const todasLasSolicitudes = response.data.solicitudes;
+      setContadoresTotales({
+        todos: todasLasSolicitudes.length,
+        pendiente: todasLasSolicitudes.filter((s: SolicitudPassword) => s.ESTADO === 'Pendiente').length,
+        aceptado: todasLasSolicitudes.filter((s: SolicitudPassword) => s.ESTADO === 'Aceptado').length,
+        rechazado: todasLasSolicitudes.filter((s: SolicitudPassword) => s.ESTADO === 'Rechazado').length
+      });
+    } catch (error) {
+      console.error('Error al obtener contadores:', error);
+    }
+  };
+
+  const fetchSolicitudes = async (showNotification = false) => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/auth/password-change-solicitudes`);
+      const params: any = { page, limit };
+      
+      // Agregar búsqueda por usuario si existe
+      if (search && search.trim() !== '') {
+        params.usuario = search.trim(); // Cambiamos 'search' por 'usuario' para ser más específico
+        console.log('Buscando por usuario:', search.trim()); // Para debug
+      }
+      
+      // Agregar filtro si no es "Todos"
+      if (filtroEstado !== 'Todos') {
+        params.filter = filtroEstado;
+      }
+
+      console.log('Parámetros enviados al servidor:', params); // Para debug
+
+      const response = await axios.get(`${API_BASE_URL}/api/auth/password-change-solicitudes`, {
+        params
+      });
       const newSolicitudes = response.data.solicitudes;
       setSolicitudes(newSolicitudes);
+      setTotalSolicitudes(response.data.totalCount || newSolicitudes.length);
 
-      const pendientes = newSolicitudes.filter((s: SolicitudPassword) => s.ESTADO === 'Pendiente').length;
-      if (pendientes > 0) {
-        Store.addNotification({
-          title: "Solicitudes de Cambio de Contraseña",
-          message: `Hay ${pendientes} solicitud(es) de cambio de contraseña pendiente(s).`,
-          type: "info",
-          insert: "top",
-          container: "top-right",
-          animationIn: ["animate__animated", "animate__fadeIn"],
-          animationOut: ["animate__animated", "animate__fadeOut"],
-          dismiss: {
-            duration: 5000,
-            onScreen: true,
-          },
-        });
+      // Solo mostrar notificación en la carga inicial o cuando se especifique
+      if (showNotification) {
+        const pendientes = newSolicitudes.filter((s: SolicitudPassword) => s.ESTADO === 'Pendiente').length;
+        if (pendientes > 0) {
+          Store.addNotification({
+            title: "Solicitudes de Cambio de Contraseña",
+            message: `Hay ${pendientes} solicitud(es) de cambio de contraseña pendiente(s).`,
+            type: "info",
+            insert: "top",
+            container: "top-right",
+            animationIn: ["animate__animated", "animate__fadeIn"],
+            animationOut: ["animate__animated", "animate__fadeOut"],
+            dismiss: {
+              duration: 5000,
+              onScreen: true,
+            },
+          });
+        }
       }
     } catch (error) {
+      console.error('Error al cargar solicitudes:', error); // Para debug
+      setError(true);
+      setMessageError('Error al cargar las solicitudes');
       setErrorMessage('Error al cargar las solicitudes');
     }
     setIsLoading(false);
@@ -156,7 +262,8 @@ export default function ManagePasswordChanges({ usuarioLogueado }: Props) {
       setNuevasPasswords(prev => ({ ...prev, [solicitudId]: '' }));
       setShowPasswords(prev => ({ ...prev, [solicitudId]: false }));
 
-      fetchSolicitudes();
+      fetchSolicitudes(); // No mostrar notificación al procesar una solicitud
+      fetchContadoresTotales(); // Actualizar contadores después de procesar
       Store.addNotification({
         title: "Acción Completada",
         message: `Solicitud ${accion.toLowerCase()} con éxito.`,
@@ -192,158 +299,327 @@ export default function ManagePasswordChanges({ usuarioLogueado }: Props) {
   };
 
   useEffect(() => {
-    fetchSolicitudes();
+    fetchSolicitudes(true); // Solo mostrar notificación en la carga inicial
+    fetchContadoresTotales(); // Cargar contadores iniciales
   }, []);
+
+  useEffect(() => {
+    // Debounce para la búsqueda
+    const timeoutId = setTimeout(() => {
+      console.log('UseEffect ejecutándose con:', { page, search, filtroEstado }); // Para debug
+      fetchSolicitudes(); // No mostrar notificaciones en filtros/búsquedas
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [page, search, filtroEstado]);
 
   return (
     <Layout usuarioLogueado={usuarioLogueado}>
       <Head>
-        <title>Gestionar Cambios de Contraseña</title>
+        <title>Gestionar Cambios de Contraseña - Mi Espacio</title>
+        <meta name="description" content="Panel de administración para gestionar solicitudes de cambio de contraseña" />
       </Head>
       <div className={styles.container}>
-        <h1>Gestionar Solicitudes de Cambio de Contraseña</h1>
-        {errorMessage && <p className={styles.labelError}>{errorMessage}</p>}
+        <ReactNotifications />
+        <h1 className={styles.title}>
+          <FontAwesomeIcon icon={faClipboardList} />
+          Panel de Gestión de Contraseñas
+        </h1>
         
-        <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '5px' }}>
-          <strong>Total de solicitudes:</strong> {solicitudes.length} | 
-          <strong> Pendientes:</strong> {solicitudes.filter(s => s.ESTADO === 'Pendiente').length} | 
-          <strong> Procesadas:</strong> {solicitudes.filter(s => s.ESTADO !== 'Pendiente').length}
+        {errorMessage && (
+          <div className={styles.labelError}>
+            <strong>⚠️ Error:</strong> {errorMessage}
+          </div>
+        )}
+
+        <div className={styles.infoCard}>
+          <div className={styles.infoCardTitle}>Información Importante</div>
+          <p className={styles.infoCardText}>
+            Como administrador, puedes gestionar las solicitudes de cambio de contraseña de los usuarios. 
+            Las solicitudes pendientes requieren tu atención para asignar una nueva contraseña temporal.
+          </p>
+        </div>
+        
+        <div className={styles.statsContainer}>
+          <div className={styles.statItem}>
+            <span className={styles.statNumber}>{contadoresTotales.todos}</span>
+            <span className={styles.statLabel}>📊 Total de Solicitudes</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statNumber} style={{ color: '#ffa500' }}>
+              {contadoresTotales.pendiente}
+            </span>
+            <span className={styles.statLabel}>⏳ Pendientes de Revisar</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statNumber} style={{ color: '#28a745' }}>
+              {contadoresTotales.aceptado}
+            </span>
+            <span className={styles.statLabel}>✅ Solicitudes Aceptadas</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statNumber} style={{ color: '#dc3545' }}>
+              {contadoresTotales.rechazado}
+            </span>
+            <span className={styles.statLabel}>❌ Solicitudes Rechazadas</span>
+          </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Nombre Completo</th>
-                <th>Correo</th>
-                <th>Justificación</th>
-                <th>Estado</th>
-                <th>Fecha Solicitud</th>
-                <th>Fecha Respuesta</th>
-                <th>Procesado Por</th>
-                <th>Comentario Admin</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {solicitudes.map((solicitud) => (
-                <tr key={solicitud.PK_CAMBIO_PASSWORD_SOLICITUD}>
-                  <td><strong>{solicitud.USU_NOMBRE}</strong></td>
-                  <td>{solicitud.PEI_NOMBRE} {solicitud.PEI_APELLIDO_PATERNO}</td>
-                  <td>{solicitud.PEI_EMAIL_INSTITUCIONAL}</td>
-                  <td style={{ maxWidth: '200px', wordWrap: 'break-word' }}>
-                    {solicitud.JUSTIFICACION}
-                  </td>
-                  <td>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      color: 'white',
-                      backgroundColor: 
-                        solicitud.ESTADO === 'Pendiente' ? '#ffa500' :
-                        solicitud.ESTADO === 'Aceptado' ? '#28a745' : '#dc3545'
-                    }}>
-                      {solicitud.ESTADO}
-                    </span>
-                  </td>
-                  <td>{new Date(solicitud.FECHA_SOLICITUD).toLocaleString()}</td>
-                  <td>{solicitud.FECHA_RESPUESTA ? new Date(solicitud.FECHA_RESPUESTA).toLocaleString() : '-'}</td>
-                  <td>{solicitud.ADMIN_PROCESADOR || '-'}</td>
-                  <td style={{ maxWidth: '150px', wordWrap: 'break-word' }}>
-                    {solicitud.COMENTARIO_ADMIN || '-'}
-                  </td>
-                  <td style={{ minWidth: '300px' }}>
-                    {solicitud.ESTADO === 'Pendiente' ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <input
-                          type="text"
-                          placeholder="Comentario (opcional)"
-                          value={comentarios[solicitud.PK_CAMBIO_PASSWORD_SOLICITUD] || ''}
-                          onChange={(e) => setComentarios(prev => ({
-                            ...prev,
-                            [solicitud.PK_CAMBIO_PASSWORD_SOLICITUD]: e.target.value
-                          }))}
-                          className={styles.input}
-                          style={{ marginBottom: '5px' }}
-                        />
-                        <div style={{ position: 'relative' }}>
-                          <input
-                            type={showPasswords[solicitud.PK_CAMBIO_PASSWORD_SOLICITUD] ? 'text' : 'password'}
-                            placeholder="Nueva contraseña (mín. 6 caracteres)"
-                            value={nuevasPasswords[solicitud.PK_CAMBIO_PASSWORD_SOLICITUD] || ''}
-                            onChange={(e) => setNuevasPasswords(prev => ({
-                              ...prev,
-                              [solicitud.PK_CAMBIO_PASSWORD_SOLICITUD]: e.target.value
-                            }))}
-                            className={styles.input}
-                            style={{ paddingRight: '40px' }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => toggleShowPassword(solicitud.PK_CAMBIO_PASSWORD_SOLICITUD)}
-                            style={{
-                              position: 'absolute',
-                              right: '10px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              border: 'none',
-                              background: 'none',
-                              cursor: 'pointer',
-                              outline: 'none',
-                            }}
-                          >
-                            <FontAwesomeIcon 
-                              icon={showPasswords[solicitud.PK_CAMBIO_PASSWORD_SOLICITUD] ? faEye : faEyeSlash} 
-                            />
-                          </button>
-                        </div>
-                        <div style={{ display: 'flex', gap: '5px' }}>
-                          <button
-                            onClick={() => handleAccion(solicitud.PK_CAMBIO_PASSWORD_SOLICITUD, 'Aceptado')}
-                            className={styles.button}
-                            disabled={isLoading}
-                            style={{ 
-                              backgroundColor: '#28a745', 
-                              fontSize: '12px', 
-                              padding: '8px 12px',
-                              flex: 1
-                            }}
-                          >
-                            <FontAwesomeIcon icon={faCheckCircle} /> Aceptar
-                          </button>
-                          <button
-                            onClick={() => handleAccion(solicitud.PK_CAMBIO_PASSWORD_SOLICITUD, 'Rechazado')}
-                            className={styles.button}
-                            disabled={isLoading}
-                            style={{ 
-                              backgroundColor: '#dc3545', 
-                              fontSize: '12px', 
-                              padding: '8px 12px',
-                              flex: 1
-                            }}
-                          >
-                            <FontAwesomeIcon icon={faTimesCircle} /> Rechazar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <span style={{ fontSize: '14px', color: '#666' }}>
-                        Ya procesada
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className={styles.filterSection}>
+          <div className={styles.filterTitle}>
+            <FontAwesomeIcon icon={faFilter} />
+            Filtrar solicitudes por estado
+          </div>
+          <div className={styles.filterOptions}>
+            {['Todos', 'Pendiente', 'Aceptado', 'Rechazado'].map(estado => {
+              let contador = 0;
+              switch(estado) {
+                case 'Todos': contador = contadoresTotales.todos; break;
+                case 'Pendiente': contador = contadoresTotales.pendiente; break;
+                case 'Aceptado': contador = contadoresTotales.aceptado; break;
+                case 'Rechazado': contador = contadoresTotales.rechazado; break;
+              }
+              
+              return (
+                <button
+                  key={estado}
+                  className={`${styles.filterButton} ${filtroEstado === estado ? styles.active : ''}`}
+                  onClick={() => setFiltroEstado(estado)}
+                >
+                  {estado === 'Todos' && '📋'} 
+                  {estado === 'Pendiente' && '⏳'} 
+                  {estado === 'Aceptado' && '✅'} 
+                  {estado === 'Rechazado' && '❌'} 
+                  {estado} ({contador})
+                </button>
+              );
+            })}
+          </div>
         </div>
-        
-        {solicitudes.length === 0 && !isLoading && (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-            <p>No hay solicitudes de cambio de contraseña.</p>
+
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ 
+            marginBottom: '8px', 
+            fontSize: '14px', 
+            color: '#666',
+            fontWeight: '500'
+          }}>
+            🔍 Buscar por nombre de usuario:
+          </div>
+          <SearchBar 
+            searchTerm={search} 
+            onSearchTermChange={handleSearchTermChange}
+          />
+          {search && (
+            <div style={{ 
+              marginTop: '10px', 
+              padding: '8px 12px', 
+              background: '#e3f2fd', 
+              borderRadius: '6px', 
+              fontSize: '14px',
+              color: '#1976d2'
+            }}>
+              🔍 Buscando usuario: <strong>{search}</strong> 
+              {isLoading && <span> - Cargando...</span>}
+            </div>
+          )}
+        </div>
+
+        {error ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyStateIcon}>
+              ⚠️
+            </div>
+            <p className={styles.emptyStateText}>{messageError}</p>
+            <button type='button' onClick={handleReload} className={`${styles.button} ${styles.buttonAccept}`}>
+              Volver a intentar
+            </button>
+          </div>
+        ) : solicitudes.length === 0 && !isLoading ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyStateIcon}>
+              {filtroEstado === 'Todos' ? '📋' : 
+               filtroEstado === 'Pendiente' ? '⏳' : 
+               filtroEstado === 'Aceptado' ? '✅' : '❌'}
+            </div>
+            <p className={styles.emptyStateText}>
+              {filtroEstado === 'Todos' 
+                ? 'No hay solicitudes de cambio de contraseña registradas.' 
+                : `No hay solicitudes con estado "${filtroEstado}".`}
+            </p>
+          </div>
+        ) : (
+          <div>
+            {showScrollHint && solicitudes.length > 0 && (
+              <div style={{
+                background: 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)',
+                border: '1px solid #ffc107',
+                borderRadius: '8px',
+                padding: '10px 15px',
+                marginBottom: '15px',
+                fontSize: '13px',
+                color: '#856404',
+                textAlign: 'center',
+                fontWeight: '500'
+              }}>
+                📱 <strong>Consejo:</strong> Desliza horizontalmente en la tabla para ver todas las columnas
+              </div>
+            )}
+            <div className={`${styles.tableContainer} ${isLoading ? styles.loadingOverlay : ''}`}>
+              <div className={styles.tableScrollContainer}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>👤 Usuario</th>
+                      <th>📋 Información Personal</th>
+                      <th>💬 Justificación</th>
+                      <th>📊 Estado</th>
+                      <th>📅 Fecha Solicitud</th>
+                      <th>⚡ Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {solicitudes.map((solicitud, index) => (
+                      <tr 
+                        key={solicitud.PK_CAMBIO_PASSWORD_SOLICITUD}
+                        className={solicitud.ESTADO === 'Pendiente' ? styles.priorityRow : ''}
+                      >
+                        <td>{(page - 1) * limit + index + 1}</td>
+                        <td>
+                          <div className={styles.userName}>
+                            <FontAwesomeIcon icon={faUser} />
+                            {solicitud.USU_NOMBRE}
+                          </div>
+                        </td>
+                        <td>
+                          <div className={styles.personalInfo}>
+                            <div className={styles.fullName}>
+                              {solicitud.PEI_NOMBRE} {solicitud.PEI_APELLIDO_PATERNO}
+                            </div>
+                            <div className={styles.emailText}>
+                              📧 {solicitud.PEI_EMAIL_INSTITUCIONAL}
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div className={styles.justificationText}>
+                            {solicitud.JUSTIFICACION}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`${styles.statusBadge} ${
+                            solicitud.ESTADO === 'Pendiente' ? styles.statusPendiente :
+                            solicitud.ESTADO === 'Aceptado' ? styles.statusAceptado : styles.statusRechazado
+                          }`}>
+                            {solicitud.ESTADO === 'Pendiente' && '⏳'} 
+                            {solicitud.ESTADO === 'Aceptado' && '✅'} 
+                            {solicitud.ESTADO === 'Rechazado' && '❌'} 
+                            {solicitud.ESTADO}
+                          </span>
+                        </td>
+                        <td>
+                          <div className={styles.dateText}>
+                            {new Date(solicitud.FECHA_SOLICITUD).toLocaleDateString('es-ES')}
+                          </div>
+                        </td>
+                        <td>
+                          {solicitud.ESTADO === 'Pendiente' ? (
+                            <div className={styles.actionsContainer}>
+                              <div className={styles.actionStep}>
+                                <div className={styles.stepLabel}>
+                                  <span className={styles.stepNumber}>1</span>
+                                  💬 Comentario
+                                </div>
+                                <input
+                                  type="text"
+                                  placeholder="Comentario (opcional)"
+                                  value={comentarios[solicitud.PK_CAMBIO_PASSWORD_SOLICITUD] || ''}
+                                  onChange={(e) => setComentarios(prev => ({
+                                    ...prev,
+                                    [solicitud.PK_CAMBIO_PASSWORD_SOLICITUD]: e.target.value
+                                  }))}
+                                  className={styles.input}
+                                />
+                              </div>
+                              
+                              <div className={styles.actionStep}>
+                                <div className={styles.stepLabel}>
+                                  <span className={styles.stepNumber}>2</span>
+                                  🔑 Contraseña
+                                </div>
+                                <div className={styles.passwordContainer}>
+                                  <input
+                                    type={showPasswords[solicitud.PK_CAMBIO_PASSWORD_SOLICITUD] ? 'text' : 'password'}
+                                    placeholder="Nueva contraseña"
+                                    value={nuevasPasswords[solicitud.PK_CAMBIO_PASSWORD_SOLICITUD] || ''}
+                                    onChange={(e) => setNuevasPasswords(prev => ({
+                                      ...prev,
+                                      [solicitud.PK_CAMBIO_PASSWORD_SOLICITUD]: e.target.value
+                                    }))}
+                                    className={`${styles.input} ${styles.passwordInput}`}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleShowPassword(solicitud.PK_CAMBIO_PASSWORD_SOLICITUD)}
+                                    className={styles.passwordToggle}
+                                  >
+                                    <FontAwesomeIcon 
+                                      icon={showPasswords[solicitud.PK_CAMBIO_PASSWORD_SOLICITUD] ? faEye : faEyeSlash} 
+                                    />
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <div className={styles.buttonGroup}>
+                                <button
+                                  onClick={() => handleAccion(solicitud.PK_CAMBIO_PASSWORD_SOLICITUD, 'Aceptado')}
+                                  className={`${styles.button} ${styles.buttonAccept}`}
+                                  disabled={isLoading}
+                                  title="Aceptar solicitud"
+                                >
+                                  <FontAwesomeIcon icon={faCheckCircle} />
+                                  Aprobar
+                                </button>
+                                <button
+                                  onClick={() => handleAccion(solicitud.PK_CAMBIO_PASSWORD_SOLICITUD, 'Rechazado')}
+                                  className={`${styles.button} ${styles.buttonReject}`}
+                                  disabled={isLoading}
+                                  title="Rechazar solicitud"
+                                >
+                                  <FontAwesomeIcon icon={faTimesCircle} />
+                                  Rechazar
+                                </button>
+                              </div>
+                              
+                              <div className={styles.quickActionHint}>
+                                💡 Para aprobar necesitas crear una contraseña temporal
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={styles.processedText}>
+                              ✅ Solicitud procesada exitosamente
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={7}>
+                        <Pagination
+                          page={page}
+                          total={totalSolicitudes}
+                          limit={limit}
+                          onChange={handlePageChange}
+                        />
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
           </div>
         )}
       </div>

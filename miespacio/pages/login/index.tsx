@@ -201,6 +201,15 @@ export default function Login({ usuarioLogueado }: Props): JSX.Element {
     setShowPassword(!showPassword);
   };
 
+  const handleForgotPassword = () => {
+    console.log('Navigating to forgot password page...');
+    router.push('/forgot-password').then(() => {
+      console.log('Navigation successful');
+    }).catch((error) => {
+      console.error('Navigation failed:', error);
+    });
+  };
+
   return (
     <Layout hideNavbar={true} usuarioLogueado={usuarioLogueado}>
       <Head>
@@ -226,181 +235,221 @@ export default function Login({ usuarioLogueado }: Props): JSX.Element {
           </svg>
         </div>
         <div className={styles.login_background}></div>
-        <div className={styles.loginContainer}>
+        <div className={`${styles.loginContainer} ${isRegistering ? styles.registering : ''}`}>
           <div className={styles.logoContainer}>
             <img src="/images/logos/mi_espacio.png" alt="Logo" className={styles.logo} />
           </div>
-          <div className={styles.formContainer}>
+          <div className={`${styles.formContainer} ${isRegistering ? styles.registering : ''}`}>
             <h2 className={styles.loginTitle}>{isRegistering ? 'Registro' : 'Iniciar Sesión'}</h2>
             <img src={"/images/logos/logo_espe.png"} alt="User Icon" className={styles.userIcon} />
             {isRegistering ? (
-              <form className='styles.form' onSubmit={handleRegisterSubmit}>
-                <label htmlFor="reg-username" className={styles.label}>Usuario</label>
-                <input
-                  type="text"
-                  id="reg-username"
-                  name="username"
-                  placeholder="Ingresa tu usuario de miESPE"
-                  required
-                  value={registerData.username}
-                  onChange={(e) =>
-                    setRegisterData({
-                      ...registerData,
-                      username: e.target.value,
-                    })
-                  }
-                  className={styles.input} />
-                <label htmlFor="reg-password" className={styles.label}>Contraseña</label>
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="reg-password"
-                    name="password"
-                    placeholder="Ingresa tu contraseña de miESPE"
-                    required
-                    value={registerData.password}
-                    onChange={(e) =>
-                      setRegisterData({
-                        ...registerData,
-                        password: e.target.value,
-                      })
-                    }
-                    className={styles.input} />
-                  <button
-                    type="button"
-                    style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '36%',
-                      transform: 'translateY(-50%)',
-                      border: 'none',
-                      background: 'none',
-                      cursor: 'pointer',
-                      outline: 'none',
-                    }}
-                    onClick={toggleShowPassword}
-                  >
-                    <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} className={styles.show_button} />
-                  </button>
+              <form className={styles.form} onSubmit={handleRegisterSubmit}>
+                {/* Primera fila: Usuario y Contraseña */}
+                <div className={styles.formRow}>
+                  <div className={styles.formColumn}>
+                    <label htmlFor="reg-username" className={styles.label}>Usuario</label>
+                    <input
+                      type="text"
+                      id="reg-username"
+                      name="username"
+                      placeholder="Ingresa tu usuario de miESPE"
+                      required
+                      value={registerData.username}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          username: e.target.value,
+                        })
+                      }
+                      className={styles.input} />
+                  </div>
+                  <div className={styles.formColumn}>
+                    <label htmlFor="reg-password" className={styles.label}>Contraseña</label>
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        id="reg-password"
+                        name="password"
+                        placeholder="Ingresa tu contraseña de miESPE"
+                        required
+                        value={registerData.password}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            password: e.target.value,
+                          })
+                        }
+                        className={styles.input} />
+                      <button
+                        type="button"
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '36%',
+                          transform: 'translateY(-50%)',
+                          border: 'none',
+                          background: 'none',
+                          cursor: 'pointer',
+                          outline: 'none',
+                        }}
+                        onClick={toggleShowPassword}
+                      >
+                        <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} className={styles.show_button} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <label htmlFor="firstName" className={styles.label}>Nombre</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  name="firstName"
-                  placeholder="Ingresa tu nombre"
-                  required
-                  value={registerData.firstName}
-                  onChange={(e) =>
-                    setRegisterData({
-                      ...registerData,
-                      firstName: e.target.value,
-                    })
-                  }
-                  className={styles.input} />
-                <label htmlFor="lastName" className={styles.label}>Apellido Paterno</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  name="lastName"
-                  placeholder="Ingresa tu apellido paterno"
-                  required
-                  value={registerData.lastName}
-                  onChange={(e) =>
-                    setRegisterData({
-                      ...registerData,
-                      lastName: e.target.value,
-                    })
-                  }
-                  className={styles.input} />
-                <label htmlFor="secondLastName" className={styles.label}>Apellido Materno</label>
-                <input
-                  type="text"
-                  id="secondLastName"
-                  name="secondLastName"
-                  placeholder="Ingresa tu apellido materno"
-                  value={registerData.secondLastName}
-                  onChange={(e) =>
-                    setRegisterData({
-                      ...registerData,
-                      secondLastName: e.target.value,
-                    })
-                  }
-                  className={styles.input} />
-                <label htmlFor="carnetId" className={styles.label}>Carnet ID</label>
-                <input
-                  type="text"
-                  id="carnetId"
-                  name="carnetId"
-                  placeholder="Ingresa tu carnet ID"
-                  value={registerData.carnetId}
-                  onChange={(e) =>
-                    setRegisterData({
-                      ...registerData,
-                      carnetId: e.target.value,
-                    })
-                  }
-                  className={styles.input} />
-                <label htmlFor="email" className='styles.label'>Correo Institucional</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  placeholder="Ingresa tu correo institucional"
-                  required
-                  value={registerData.email}
-                  onChange={(e) =>
-                    setRegisterData({
-                      ...registerData,
-                      email: e.target.value,
-                    })
-                  }
-                  className={styles.input} />
-                <label htmlFor="cedula" className={styles.label}>Cédula</label>
-                <input
-                  type="text"
-                  id="cedula"
-                  name="cedula"
-                  placeholder="Ingresa tu número de cédula"
-                  value={registerData.cedula}
-                  onChange={(e) =>
-                    setRegisterData({
-                      ...registerData,
-                      cedula: e.target.value,
-                    })
-                  }
-                  className={styles.input} />
-                <label htmlFor="telefono" className={styles.label}>Teléfono</label>
-                <input
-                  type="text"
-                  id="telefono"
-                  name="telefono"
-                  placeholder="Ingresa tu número de teléfono"
-                  value={registerData.telefono}
-                  onChange={(e) =>
-                    setRegisterData({
-                      ...registerData,
-                      telefono: e.target.value,
-                    })
-                  }
-                  className={styles.input} />
-                <label htmlFor="role" className={styles.label}>Rol</label>
-                <select
-                  id="role"
-                  name="role"
-                  value={registerData.role}
-                  onChange={(e) =>
-                    setRegisterData({
-                      ...registerData,
-                      role: e.target.value,
-                    })
-                  }
-                  className={styles.input}
-                >
-                  <option value="Estudiante">Estudiante</option>
-                  <option value="Docente">Docente</option>
-                  <option value="Administrativo">Administrativo</option>
-                </select>
+
+                {/* Segunda fila: Nombre y Apellido Paterno */}
+                <div className={styles.formRow}>
+                  <div className={styles.formColumn}>
+                    <label htmlFor="firstName" className={styles.label}>Nombre</label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      name="firstName"
+                      placeholder="Ingresa tu nombre"
+                      required
+                      value={registerData.firstName}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          firstName: e.target.value,
+                        })
+                      }
+                      className={styles.input} />
+                  </div>
+                  <div className={styles.formColumn}>
+                    <label htmlFor="lastName" className={styles.label}>Apellido Paterno</label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      name="lastName"
+                      placeholder="Ingresa tu apellido paterno"
+                      required
+                      value={registerData.lastName}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          lastName: e.target.value,
+                        })
+                      }
+                      className={styles.input} />
+                  </div>
+                </div>
+
+                {/* Tercera fila: Apellido Materno y Email */}
+                <div className={styles.formRow}>
+                  <div className={styles.formColumn}>
+                    <label htmlFor="secondLastName" className={styles.label}>Apellido Materno</label>
+                    <input
+                      type="text"
+                      id="secondLastName"
+                      name="secondLastName"
+                      placeholder="Ingresa tu apellido materno"
+                      value={registerData.secondLastName}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          secondLastName: e.target.value,
+                        })
+                      }
+                      className={styles.input} />
+                  </div>
+                  <div className={styles.formColumn}>
+                    <label htmlFor="email" className={styles.label}>Correo Institucional</label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      placeholder="Ingresa tu correo institucional"
+                      required
+                      value={registerData.email}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          email: e.target.value,
+                        })
+                      }
+                      className={styles.input} />
+                  </div>
+                </div>
+
+                {/* Cuarta fila: Carnet ID y Cédula */}
+                <div className={styles.formRow}>
+                  <div className={styles.formColumn}>
+                    <label htmlFor="carnetId" className={styles.label}>Carnet ID</label>
+                    <input
+                      type="text"
+                      id="carnetId"
+                      name="carnetId"
+                      placeholder="Ingresa tu carnet ID"
+                      value={registerData.carnetId}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          carnetId: e.target.value,
+                        })
+                      }
+                      className={styles.input} />
+                  </div>
+                  <div className={styles.formColumn}>
+                    <label htmlFor="cedula" className={styles.label}>Cédula</label>
+                    <input
+                      type="text"
+                      id="cedula"
+                      name="cedula"
+                      placeholder="Ingresa tu número de cédula"
+                      value={registerData.cedula}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          cedula: e.target.value,
+                        })
+                      }
+                      className={styles.input} />
+                  </div>
+                </div>
+
+                {/* Quinta fila: Teléfono y Rol */}
+                <div className={styles.formRow}>
+                  <div className={styles.formColumn}>
+                    <label htmlFor="telefono" className={styles.label}>Teléfono</label>
+                    <input
+                      type="text"
+                      id="telefono"
+                      name="telefono"
+                      placeholder="Ingresa tu número de teléfono"
+                      value={registerData.telefono}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          telefono: e.target.value,
+                        })
+                      }
+                      className={styles.input} />
+                  </div>
+                  <div className={styles.formColumn}>
+                    <label htmlFor="role" className={styles.label}>Rol</label>
+                    <select
+                      id="role"
+                      name="role"
+                      value={registerData.role}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          role: e.target.value,
+                        })
+                      }
+                      className={styles.input}
+                    >
+                      <option value="Estudiante">Estudiante</option>
+                      <option value="Docente">Docente</option>
+                      <option value="Administrativo">Administrativo</option>
+                    </select>
+                  </div>
+                </div>
+
                 {errorMessage && <label className={styles.labelError}>{errorMessage}</label>}
                 <button type="submit" className={styles.button} disabled={isLoading}>
                   {isLoading ? <FontAwesomeIcon icon={faSpinner} spin /> : 'Registrar'}
@@ -465,10 +514,15 @@ export default function Login({ usuarioLogueado }: Props): JSX.Element {
                 <button type="button" className={styles.button} onClick={() => setIsRegistering(true)}>
                   Registrarse
                 </button>
-                <button type="button" className={styles.button} onClick={() => router.push('/forgot-password')} style={{
+                <button 
+                  type="button" 
+                  className={styles.button} 
+                  onClick={handleForgotPassword}
+                  style={{
                     backgroundColor: '#6c757d',
                     marginTop: '10px'
-                  }}>
+                  }}
+                >
                   ¿Olvidaste tu contraseña?
                 </button>
               </form>

@@ -75,6 +75,6 @@ async function verificarPermisos(codRol: number, ruta: string): Promise<boolean>
 
 export const config = {
   matcher: [
-    '/((?!login|about|api|_next|favicon.ico|espacios_images|images|%3Cno%20source%3E\\/).*)',
+    '/((?!login|forgot-password|about|api|_next|favicon.ico|espacios_images|images|%3Cno%20source%3E\\/).*)',
   ],
 };

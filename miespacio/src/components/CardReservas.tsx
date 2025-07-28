@@ -12,11 +12,12 @@ import { EquipoForReservation } from '@/libs/equipo';
 import { set } from 'date-fns';
 import 'react-notifications-component/dist/theme.css'
 import { Store } from 'react-notifications-component';
+import { Auth } from '@/libs/auth';
 
 interface CardReservasProps {
     imageUrl: string;
     reserva: ReservaInfo;
-    usuarioLogueado: number;
+    usuarioLogueado: Auth | null;
     setSelectedReserva: (reserva: ReservaInfo) => void;
     setIsNestedModalOpen: (isOpen: boolean) => void;
     setAction: (action: string) => void;
@@ -134,18 +135,30 @@ const CardReservas: React.FC<CardReservasProps> = ({ imageUrl, reserva, usuarioL
                         )}
 
                     </div>
-                    {reserva.CodPersonaInternaDirigenteEspacio.split(',').map(Number).includes(usuarioLogueado) && reserva.EstadoSolicitud == '2' && (
-                        <div className={styles.buttons_container}>
-                            {reserva.Dia >= new Date().toISOString().slice(0, 10) && (
-                                <button type="button" className={`${styles.solicitud_button} ${styles.accept}`} title='Aceptar' onClick={handleAccept}>
-                                    <FontAwesomeIcon icon={faCheck} className={styles.button_icon} />
+                    {(() => {
+                        // Verificar si el usuario tiene permisos de administrador (CodRol 1 o 2)
+                        const isAdmin = usuarioLogueado && (usuarioLogueado.CodRol === 1 || usuarioLogueado.CodRol === 2);
+                        
+                        // Verificar si es dirigente del espacio
+                        const isDirigente = usuarioLogueado && 
+                            reserva.CodPersonaInternaDirigenteEspacio.split(',').map(Number).includes(usuarioLogueado.CodPersonaInterna);
+                        
+                        // Mostrar botones si es admin o dirigente y la solicitud está pendiente
+                        const canManageRequest = (isAdmin || isDirigente) && reserva.EstadoSolicitud == '2';
+                        
+                        return canManageRequest && (
+                            <div className={styles.buttons_container}>
+                                {reserva.Dia >= new Date().toISOString().slice(0, 10) && (
+                                    <button type="button" className={`${styles.solicitud_button} ${styles.accept}`} title='Aceptar' onClick={handleAccept}>
+                                        <FontAwesomeIcon icon={faCheck} className={styles.button_icon} />
+                                    </button>
+                                )}
+                                <button type="button" className={`${styles.solicitud_button} ${styles.deny}`} title='Rechazar' onClick={handleReject}>
+                                    <FontAwesomeIcon icon={faTimes} className={styles.button_icon} />
                                 </button>
-                            )}
-                            <button type="button" className={`${styles.solicitud_button} ${styles.deny}`} title='Rechazar' onClick={handleReject}>
-                                <FontAwesomeIcon icon={faTimes} className={styles.button_icon} />
-                            </button>
-                        </div>
-                    )}
+                            </div>
+                        );
+                    })()}
                 </div>
                 <div className={styles.split_container}>
                     <div className={styles.info_reserva}>

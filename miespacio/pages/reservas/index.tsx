@@ -39,10 +39,11 @@ type ConfirmationModalProps = {
     onAccept: () => void;
     onReject: () => void;
     action: string;
+    usuarioLogueado: Auth | null;
 }
 
 function ConfirmationModal(props: ConfirmationModalProps) {
-    const { isOpen, onClose, onAccept, onReject, action } = props;
+    const { isOpen, onClose, onAccept, onReject, action, usuarioLogueado } = props;
 
     const handleAccept = () => {
         onAccept();
@@ -52,34 +53,50 @@ function ConfirmationModal(props: ConfirmationModalProps) {
         onReject();
     };
 
+    // Verificar si el usuario tiene permisos de administrador (CodRol 1 o 2)
+    const isAdmin = usuarioLogueado && (usuarioLogueado.CodRol === 1 || usuarioLogueado.CodRol === 2);
+
     return (
         <Modal open={isOpen} onClose={onClose} className={styles.modal}>
             <div className={styles.card_confirmation}>
                 <h3>Confirmación</h3>
-                {action === '1' && (
-                    <>
-                        <div>Está a punto de aceptar la solicitud para realizar la reserva. ¿Está seguro?</div>
+                {!isAdmin ? (
+                    <div>
+                        <div>No tienes permisos para gestionar solicitudes de reserva. Solo los administradores pueden aceptar o rechazar solicitudes.</div>
                         <div className={styles.card_buttons_container}>
                             <button onClick={onClose} className={styles.cancel_button}>
-                                Cancelar
-                            </button>
-                            <button onClick={handleAccept} className={styles.confirm_button}>
-                                Aceptar
+                                Cerrar
                             </button>
                         </div>
-                    </>
-                )}
-                {action === '0' && (
+                    </div>
+                ) : (
                     <>
-                        <div>Está a punto de rechazar la solicitud para realizar la reserva. ¿Está seguro?</div>
-                        <div className={styles.card_buttons_container}>
-                            <button onClick={onClose} className={styles.cancel_button}>
-                                Cancelar
-                            </button>
-                            <button onClick={handleReject} className={styles.reject_button}>
-                                Rechazar
-                            </button>
-                        </div>
+                        {action === '1' && (
+                            <>
+                                <div>Está a punto de aceptar la solicitud para realizar la reserva. ¿Está seguro?</div>
+                                <div className={styles.card_buttons_container}>
+                                    <button onClick={onClose} className={styles.cancel_button}>
+                                        Cancelar
+                                    </button>
+                                    <button onClick={handleAccept} className={styles.confirm_button}>
+                                        Aceptar
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                        {action === '0' && (
+                            <>
+                                <div>Está a punto de rechazar la solicitud para realizar la reserva. ¿Está seguro?</div>
+                                <div className={styles.card_buttons_container}>
+                                    <button onClick={onClose} className={styles.cancel_button}>
+                                        Cancelar
+                                    </button>
+                                    <button onClick={handleReject} className={styles.reject_button}>
+                                        Rechazar
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </>
                 )}
             </div>
@@ -763,7 +780,7 @@ export default function Reservas({ reservas: initialReserva, totalCount: initial
             </Head>
             <div className={styles.espacios_container}>
                 <ReactNotifications />
-                <ConfirmationModal isOpen={isNestedModalOpen} onClose={closeConfirmationModal} onAccept={handleAccept} onReject={handleReject} action={action} />
+                <ConfirmationModal isOpen={isNestedModalOpen} onClose={closeConfirmationModal} onAccept={handleAccept} onReject={handleReject} action={action} usuarioLogueado={usuarioLogueado} />
                 <Modal open={transactionModalOpen} className={styles.modal}>
                     <div className={styles.card_confirmation}>
                         {isLoadingSolicitud === true ? (<div className={styles.load_icon}><FontAwesomeIcon icon={faSpinner} spin /></div>) : (
@@ -1016,7 +1033,7 @@ export default function Reservas({ reservas: initialReserva, totalCount: initial
                                         key={reserva.CodReserva + index}
                                         imageUrl={imageUrl}
                                         reserva={reserva}
-                                        usuarioLogueado={usuarioLogueado ? usuarioLogueado.CodPersonaInterna : 0}
+                                        usuarioLogueado={usuarioLogueado}
                                         setSelectedReserva={setSelectedReserva}
                                         setIsNestedModalOpen={setIsNestedModalOpen}
                                         setAction={setAction}

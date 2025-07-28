@@ -23,7 +23,7 @@ import { API_BASE_URL } from '@/src/components/BaseURL';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { generateCSV } from '@/src/components/csvGeneratorFuntions'
-import { generatePDF } from '@/src/components/pdfGeneratorFuntions'
+import { generatePDF, generateEspacioPDF } from '@/src/components/pdfGeneratorFuntions'
 import { ReactNotifications } from 'react-notifications-component'
 import 'react-notifications-component/dist/theme.css'
 import { Store } from 'react-notifications-component';
@@ -129,7 +129,7 @@ export default function Espacios({ espacio: initialEspacio, fotosEspacio: initia
     const { id } = router.query;
     const [editMode, setEditMode] = useState(false);
     const [editedEspacio, setEditedEspacio] = useState<Espacio_ID>(initialEspacio);
-    const [activeTab, setActiveTab] = useState(4);
+    const [activeTab, setActiveTab] = useState(3);
     const [isSSRCalled, setIsSSRCalled] = useState(true);
     const [isCrearEspacioModalOpen, setIsCrearEspacioModalOpen] = useState(false);
     const [isEditarEspacioModalOpen, setIsEditarEspacioModalOpen] = useState(false);
@@ -171,7 +171,7 @@ export default function Espacios({ espacio: initialEspacio, fotosEspacio: initia
                             Cedula: "",
                         } as PersonaInterna;
                     }));
-                    setActiveTab(4);
+                    setActiveTab(3);
                     setShowSearchModal(false);
                     setSearch('');
                 } else {
@@ -489,6 +489,168 @@ export default function Espacios({ espacio: initialEspacio, fotosEspacio: initia
         }
     };
 
+    const handleDownloadPDF = async () => {
+        setIsPrintLoading(true);
+        setShowPrintModal(false);
+        
+        try {
+            console.log('Iniciando generación de PDF...');
+            console.log('Datos del espacio:', espacio);
+            
+            // Asegurar que tenemos los datos de equipos si no los hemos cargado
+            let equiposData = equiposEspacio || [];
+            let tiposData = tiposEquipo || [];
+            
+            if (!equiposData.length || !tiposData.length) {
+                console.log('Intentando cargar datos de equipos desde API...');
+                try {
+                    const response = await axios.get(`${API_BASE_URL}/api/equipo/espacio/${id}`);
+                    if (response.status === 200) {
+                        equiposData = response.data.equipos || [];
+                        tiposData = response.data.tipos_equipo || [];
+                        console.log('Equipos cargados:', equiposData);
+                        console.log('Tipos de equipo cargados:', tiposData);
+                    }
+                } catch (equiposError) {
+                    console.warn('Error al cargar equipos, continuando sin equipos:', equiposError);
+                    // Continuamos sin equipos en lugar de fallar
+                    equiposData = [];
+                    tiposData = [];
+                }
+            }
+
+            // Verificar que tenemos datos mínimos del espacio
+            if (!espacio || !espacio.NombreEspacio) {
+                throw new Error('No hay datos suficientes del espacio para generar el PDF');
+            }
+
+            console.log('Generando PDF con generateEspacioPDF...');
+            // Generar el PDF (incluso sin equipos)
+            generateEspacioPDF(espacio, equiposData, tiposData, dirigentesEspacio);
+            
+            console.log('PDF generado exitosamente');
+            Store.addNotification({
+                title: "PDF generado exitosamente",
+                message: equiposData.length === 0 ? 
+                    "El archivo PDF del espacio se ha descargado correctamente (sin información de equipos)." :
+                    "El archivo PDF del espacio se ha descargado correctamente.",
+                type: "success",
+                insert: "top",
+                container: "top-left",
+                animationIn: ["animate__animated", "animate__fadeIn"],
+                animationOut: ["animate__animated", "animate__fadeOut"],
+                dismiss: {
+                    duration: 3000,
+                    onScreen: true
+                }
+            });
+        } catch (error) {
+            console.error('Error detallado al generar PDF:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            Store.addNotification({
+                title: "Error al generar PDF",
+                message: `Ha ocurrido un problema al generar el archivo PDF: ${errorMessage}. Por favor, intente nuevamente.`,
+                type: "danger",
+                insert: "top",
+                container: "top-left",
+                animationIn: ["animate__animated", "animate__fadeIn"],
+                animationOut: ["animate__animated", "animate__fadeOut"],
+                dismiss: {
+                    duration: 6000,
+                    onScreen: true,
+                    pauseOnHover: true
+                }
+            });
+        } finally {
+            setIsPrintLoading(false);
+        }
+    };
+
+    // Función simplificada de PDF que solo usa datos básicos del espacio
+    const handleSimplePDF = () => {
+        try {
+            console.log('Generando PDF simple del espacio...');
+            const doc = new jsPDF();
+
+            // Encabezado
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            const title = "Universidad de las Fuerzas Armadas-ESPE";
+            const titleWidth = doc.getTextWidth(title);
+            const x = (doc.internal.pageSize.getWidth() - titleWidth) / 2;
+            doc.text(title, x, 20);
+
+            // Título del espacio
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            const espacioTitle = `Información del Espacio: ${espacio.NombreEspacio}`;
+            const espacioTitleWidth = doc.getTextWidth(espacioTitle);
+            const espacioTitleX = (doc.internal.pageSize.getWidth() - espacioTitleWidth) / 2;
+            doc.text(espacioTitle, espacioTitleX, 35);
+
+            let yPos = 60;
+
+            // Información básica
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            doc.text(`Tipo: ${espacio.NombreTipoEspacio || 'N/A'}`, 20, yPos);
+            yPos += 10;
+            doc.text(`Capacidad: ${espacio.CapacidadEspacio || 0} personas`, 20, yPos);
+            yPos += 10;
+            doc.text(`Estado: ${espacio.Estado === '1' ? 'Activo' : 'Inactivo'}`, 20, yPos);
+            yPos += 10;
+            doc.text(`Unidad: ${espacio.SiglasUnidad || 'N/A'}`, 20, yPos);
+            yPos += 10;
+            doc.text(`Ubicación: ${espacio.DescripcionUbicacion || 'N/A'}`, 20, yPos);
+            yPos += 20;
+
+            // Descripción
+            if (espacio.DescripcionEspacio) {
+                doc.setFont('helvetica', 'bold');
+                doc.text('Descripción:', 20, yPos);
+                yPos += 10;
+                doc.setFont('helvetica', 'normal');
+                const splitDescription = doc.splitTextToSize(espacio.DescripcionEspacio, 170);
+                doc.text(splitDescription, 20, yPos);
+            }
+
+            // Pie de página
+            doc.setFontSize(10);
+            doc.text(`Generado el ${new Date().toLocaleDateString('es-EC')}`, 20, doc.internal.pageSize.getHeight() - 10);
+
+            doc.save(`Espacio_${espacio.NombreEspacio?.replace(/[^a-zA-Z0-9_-]/g, '_') || 'Sin_nombre'}.pdf`);
+            
+            Store.addNotification({
+                title: "PDF simple generado",
+                message: "El PDF básico del espacio se ha generado correctamente.",
+                type: "success",
+                insert: "top",
+                container: "top-left",
+                animationIn: ["animate__animated", "animate__fadeIn"],
+                animationOut: ["animate__animated", "animate__fadeOut"],
+                dismiss: {
+                    duration: 3000,
+                    onScreen: true
+                }
+            });
+        } catch (error) {
+            console.error('Error en PDF simple:', error);
+            Store.addNotification({
+                title: "Error en PDF simple",
+                message: "Error al generar PDF simple",
+                type: "danger",
+                insert: "top",
+                container: "top-left",
+                animationIn: ["animate__animated", "animate__fadeIn"],
+                animationOut: ["animate__animated", "animate__fadeOut"],
+                dismiss: {
+                    duration: 3000,
+                    onScreen: true
+                }
+            });
+        }
+    };
+
     return (
         <Layout usuarioLogueado={usuarioLogueado}>
             <Head>
@@ -564,7 +726,7 @@ export default function Espacios({ espacio: initialEspacio, fotosEspacio: initia
                                             <button type='button' /* onClick={handleDownloadCSV} */>
                                                 <FontAwesomeIcon icon={faFileCsv} className={styles.csv_icon} />
                                                 CSV</button>
-                                            <button type='button' /* onClick={handleDownloadPDF} */>
+                                            <button type='button' onClick={handleDownloadPDF}>
                                                 <FontAwesomeIcon icon={faFilePdf} className={styles.pdf_icon} />
                                                 PDF</button>
                                         </div>
@@ -663,6 +825,13 @@ export default function Espacios({ espacio: initialEspacio, fotosEspacio: initia
                                 <div className={styles.tabview_container}>
                                     <div className={styles.tabview_tabs}>
                                         <div
+                                            key={3}
+                                            className={`${styles.tabview_tab} ${activeTab === 3 ? `${styles.active}` : ''}`}
+                                            onClick={() => handleTabClick(3)}
+                                        >
+                                            Restricciones para reserva
+                                        </div>
+                                        <div
                                             key={4}
                                             className={`${styles.tabview_tab} ${activeTab === 4 ? `${styles.active}` : ''}`}
                                             onClick={() => handleTabClick(4)}
@@ -682,13 +851,6 @@ export default function Espacios({ espacio: initialEspacio, fotosEspacio: initia
                                             onClick={() => handleTabClick(2)}
                                         >
                                             Equipos
-                                        </div>
-                                        <div
-                                            key={3}
-                                            className={`${styles.tabview_tab} ${activeTab === 3 ? `${styles.active}` : ''}`}
-                                            onClick={() => handleTabClick(3)}
-                                        >
-                                            Restricciones para reserva
                                         </div>
                                     </div>
                                     <div className={styles.tabview_content}>
