@@ -61,6 +61,16 @@ export default async function manageRegistrationHandler(req: NextApiRequest, res
       // Iniciar transacción
       await pool.query('START TRANSACTION');
       try{
+        /*
+        // Mapear valores del ENUM a nombres para T_MSUSUARIO (mantener consistencia)
+        const enumToRoleMapping: { [key: string]: string } = {
+          'Estudiante': 'Estudiante',
+          'Profesor': 'Docente',           // BD: Profesor -> T_MSUSUARIO: Docente
+          'Administrativo': 'Administrador' // BD: Administrativo -> T_MSUSUARIO: Administrador
+        };
+
+        co1nst fullRole = enumToRoleMapping[solicitud.ROL] || solicitud.ROL;*/
+
         // Insertar en T_MSUSUARIO si es aceptado
         const [userResult] = await pool.query<OkPacket>(
           'INSERT INTO T_MSUSUARIO (PK_TMCPERSONA_INTERNA, USU_NOMBRE, XEUSU_PASWD, ROL) VALUES (?, ?, ?, ?)',

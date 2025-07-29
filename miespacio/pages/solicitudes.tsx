@@ -80,6 +80,18 @@ export default function Solicitudes({ usuarioLogueado }: Props) {
   const [filtroEstado, setFiltroEstado] = useState('Todos');
   const [filtroRol, setFiltroRol] = useState('Todos');
 
+    // Función para mapear valores del ENUM a nombres de display para la UI
+  // ENUM: ('Estudiante','Administrativo','Profesor')
+  const getRoleDisplayName = (enumRole: string): string => {
+    const roleDisplayMappings: { [key: string]: string } = {
+      'Estudiante': 'Estudiante',
+      'Profesor': 'Docente',        // BD: Profesor -> UI: Docente
+      'Administrativo': 'Administrativo'
+    };
+    
+    return roleDisplayMappings[enumRole] || enumRole;
+  };
+
   const fetchSolicitudes = async () => {
     setIsLoading(true);
     try {
@@ -148,7 +160,7 @@ export default function Solicitudes({ usuarioLogueado }: Props) {
       solicitud.PEI_EMAIL_INSTITUCIONAL.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesEstado = filtroEstado === 'Todos' || solicitud.ESTADO === filtroEstado;
-    const matchesRol = filtroRol === 'Todos' || solicitud.ROL === filtroRol;
+    const matchesRol = filtroRol === 'Todos' || getRoleDisplayName(solicitud.ROL) === filtroRol;
     
     return matchesSearch && matchesEstado && matchesRol;
   });
@@ -414,7 +426,8 @@ export default function Solicitudes({ usuarioLogueado }: Props) {
                         <td>{solicitud.PEI_APELLIDO_PATERNO}</td>
                         <td>{solicitud.PEI_APELLIDO_MATERNO || '-'}</td>
                         <td>{solicitud.PEI_EMAIL_INSTITUCIONAL}</td>
-                        <td>{solicitud.ROL}</td>
+                        <td>{getRoleDisplayName
+                        (solicitud.ROL)}</td>
                         <td>
                           <span className={
                             solicitud.ESTADO === 'Pendiente' ? styles.estado_pendiente :

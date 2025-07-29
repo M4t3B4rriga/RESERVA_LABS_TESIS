@@ -53,8 +53,9 @@ function ConfirmationModal(props: ConfirmationModalProps) {
         onReject();
     };
 
-    // Verificar si el usuario tiene permisos de administrador (CodRol 1 o 2)
-    const isAdmin = usuarioLogueado && (usuarioLogueado.CodRol === 1 || usuarioLogueado.CodRol === 2);
+    // Verificar si el usuario tiene permisos de administrador (CodRol 2 o 3)
+    // CodRol 2: Administrador, CodRol 3: Admin Root
+    const isAdmin = usuarioLogueado && (usuarioLogueado.CodRol === 2 || usuarioLogueado.CodRol === 3);
 
     return (
         <Modal open={isOpen} onClose={onClose} className={styles.modal}>
@@ -62,7 +63,7 @@ function ConfirmationModal(props: ConfirmationModalProps) {
                 <h3>Confirmación</h3>
                 {!isAdmin ? (
                     <div>
-                        <div>No tienes permisos para gestionar solicitudes de reserva. Solo los administradores pueden aceptar o rechazar solicitudes.</div>
+                        <div>No tienes permisos para gestionar solicitudes de reserva. Solo los administradores y Admin Root pueden aceptar o rechazar solicitudes.</div>
                         <div className={styles.card_buttons_container}>
                             <button onClick={onClose} className={styles.cancel_button}>
                                 Cerrar

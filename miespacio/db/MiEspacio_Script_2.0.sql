@@ -640,6 +640,15 @@ SELECT * FROM T_MSAUDITORIA;
 SELECT * FROM T_MSUSUARIO;
 SELECT * FROM T_MSPERMISO;
 
+DESCRIBE T_REGISTRO_SOLICITUD;
+SHOW COLUMNS FROM T_REGISTRO_SOLICITUD LIKE 'ROL';
+SHOW COLUMNS FROM T_MSUSUARIO LIKE 'ROL';
+-- Modificar la columna ROL para cambiar 'Profesor' por 'Docente'
+ALTER TABLE T_REGISTRO_SOLICITUD 
+MODIFY COLUMN ROL ENUM('Estudiante','Administrativo','Docente');
+ALTER TABLE T_MSUSUARIO 
+MODIFY COLUMN ROL ENUM('Estudiante','Administrativo','Docente');
+
 SELECT * FROM T_MSROL; 
 SELECT * FROM T_MSROL_USUARIO; 
 SELECT * FROM T_MEESPACIO; 
@@ -689,5 +698,60 @@ VALUES ('Cambios de Contraseña', '/manage-password-changes', 14, 'fas fa-key', 
 -- Asignar permiso al rol Admin Root (PK_TMSROL = 3) para el nuevo ítem
 INSERT INTO T_MSPERMISO (PK_TMSROL, PK_TMS_ITEM_MENU, PK_TMSSUBITEM_MENU, PK_TMSSUB_SUBITEM_MENU, PK_TMSFUNCIONALIDAD, PER_FECHA_ASIGNACION, ESTADO)
 VALUES (3, (SELECT PK_TMS_ITEM_MENU FROM T_MSITEM_MENU WHERE IME_NOMBRE = 'Cambios de Contraseña'), NULL, NULL, NULL, NOW(), 1);
+
+
+-- ejemplo de adminroot por medio de base de datos
+-- 1. Insertar persona interna (ajusta los datos según tus necesidades)
+INSERT INTO T_MCPERSONA_INTERNA (
+    PK_TMEUNIDAD, 
+    PEI_NOMBRE, 
+    PEI_APELLIDO_PATERNO, 
+    PEI_APELLIDO_MATERNO, 
+    PEI_CARNET_ID, 
+    PEI_EMAIL_INSTITUCIONAL, 
+    PEI_EMAIL_PERSONAL, 
+    PEI_CEDULA, 
+    PEI_TELEFONO
+)
+VALUES (
+    NULL,                           -- Sin unidad específica
+    'Admin',                        -- Nombre
+    'Root',                         -- Apellido paterno
+    'Sistema',                      -- Apellido materno
+    'A00000001',                    -- Carnet ID único
+    'admin.root@espe.edu.ec',       -- Email institucional
+    'admin.root@gmail.com',         -- Email personal (opcional)
+    '1234567890',                   -- Cédula (opcional)
+    '0999999999'                    -- Teléfono (opcional)
+);
+
+-- 2. Insertar usuario en T_MSUSUARIO
+-- IMPORTANTE: Cambiar 'TuPasswordSeguro123!' por una contraseña hasheada con bcrypt
+INSERT INTO T_MSUSUARIO (
+    PK_TMCPERSONA_INTERNA, 
+    USU_NOMBRE, 
+    XEUSU_PASWD, 
+    ROL
+)
+VALUES (
+    LAST_INSERT_ID(),               -- ID de la persona interna recién creada
+    'adminroot',                    -- Nombre de usuario
+    '$2b$10$7EKzTPQITmtHOqPcdqrU1eJva9S4CyxXLgpGSTNOfWSukD7tYrPTG',     -- CAMBIAR por hash real de bcrypt
+    'Administrativo'                -- Rol en la tabla usuario
+);
+
+-- 3. Asignar rol Admin Root (PK_TMSROL = 3) al usuario
+INSERT INTO T_MSROL_USUARIO (
+    PK_TMSROL, 
+    XEUSU_CODIGO, 
+    RUS_FECHA_ASIGNACION, 
+    ESTADO
+)
+VALUES (
+    3,                              -- PK_TMSROL = 3 es Admin Root
+    LAST_INSERT_ID(),               -- ID del usuario recién creado
+    NOW(),                          -- Fecha actual
+    1                               -- Estado activo
+);
 
 

@@ -136,8 +136,9 @@ const CardReservas: React.FC<CardReservasProps> = ({ imageUrl, reserva, usuarioL
 
                     </div>
                     {(() => {
-                        // Verificar si el usuario tiene permisos de administrador (CodRol 1 o 2)
-                        const isAdmin = usuarioLogueado && (usuarioLogueado.CodRol === 1 || usuarioLogueado.CodRol === 2);
+                        // Verificar si el usuario tiene permisos de administrador (CodRol 2 o 3)
+                        // CodRol 2: Administrador, CodRol 3: Admin Root
+                        const isAdmin = usuarioLogueado && (usuarioLogueado.CodRol === 2 || usuarioLogueado.CodRol === 3);
                         
                         // Verificar si es dirigente del espacio
                         const isDirigente = usuarioLogueado && 
