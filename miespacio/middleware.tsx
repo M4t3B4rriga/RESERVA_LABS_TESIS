@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { NextApiRequest } from 'next';
+import type { NextRequest } from 'next/server'; 
 import { jwtVerify } from "jose";
 import { API_BASE_URL, API_BASE_URL_SEC } from '@/src/components/BaseURL';
 
-export async function middleware(request: any) {
+export async function middleware(request: NextRequest) {
+  console.log("Middleware ejecutándose para:", request.nextUrl.pathname);
+  
   const jwt = request.cookies.get("miEspacioSession");
+  console.log("Cookie encontrada:", jwt ? "Sí" : "No");
 
   if (!jwt) {
+    console.log("No hay cookie, redirigiendo al login");
     // Si no hay token JWT, redirigir al usuario a la página de inicio de sesión
     return NextResponse.redirect(new URL("/login", request.url));
   }

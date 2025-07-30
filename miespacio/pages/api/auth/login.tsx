@@ -53,6 +53,10 @@ export default async function loginHandler(req: NextApiRequest, res: NextApiResp
         },
         "secret"
       );
+      const isProduction = process.env.NODE_ENV === 'production';
+      const isLocalhost = req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1');
+      const isLocalIP = req.headers.host?.includes('192.168.') || req.headers.host?.includes('10.') || req.headers.host?.includes('172.');
+
 
       /* const serialized = serialize("miEspacioSession", token, {
         httpOnly: true,
@@ -60,7 +64,7 @@ export default async function loginHandler(req: NextApiRequest, res: NextApiResp
         sameSite: "none",
         maxAge: 1209600000,
         path: "/",
-      }); */
+      }); 
 
       //res.setHeader("Set-Cookie", serialized);
       const cookies = cookie.serialize("miEspacioSession", token, {
@@ -75,6 +79,46 @@ export default async function loginHandler(req: NextApiRequest, res: NextApiResp
 
       return res.status(200).json({
         message: "Login successful",
+      });
+    }*/
+   // Configurar cookie según el entorno
+      let cookieOptions: any = {
+        maxAge: 1209600000, // 14 días
+        path: "/",
+        httpOnly: true,
+      };
+
+      if (isProduction) {
+        // Configuración para producción (HTTPS)
+        cookieOptions.secure = true;
+        cookieOptions.sameSite = "none";
+      } else {
+        // Configuración para desarrollo local
+        cookieOptions.secure = false;
+        cookieOptions.sameSite = "lax";
+      }
+
+      // Si es una IP local, forzar configuración de desarrollo
+      if (isLocalIP) {
+        cookieOptions.secure = false;
+        cookieOptions.sameSite = "lax";
+      }
+
+      const cookies = cookie.serialize("miEspacioSession", token, cookieOptions);
+      
+      res.setHeader("Set-Cookie", cookies);
+      console.log(`Cookie configurada:`, cookies);
+      console.log(`Host:`, req.headers.host);
+      console.log(`Entorno:`, process.env.NODE_ENV);
+
+      return res.status(200).json({
+        message: "Login successful",
+        user: {
+          nombre: rows[0].PEI_NOMBRE,
+          apellido: rows[0].PEI_APELLIDO_PATERNO,
+          rol: rows[0].ROL,
+          codigo: rows[0].XEUSU_CODIGO
+        }
       });
     }
 
